@@ -1,48 +1,40 @@
-
 package main
-
 import (
-	"log"
-	"net/http"
-	"os"
-
-	"github.com/line/line-bot-sdk-go/linebot"
+    "encoding/json"
+    "fmt"
+    "net/http"
 )
-
+type addressBook struct {
+    Firstname string
+    Lastname  string
+    Code      int
+    Phone     string
+}
+func getAddressBookAll(w http.ResponseWriter, r *http.Request) {
+    addBook := addressBook{
+                Firstname: "Chaiyarin",
+                Lastname:  "Niamsuwan",
+                Code:      1993,
+                Phone:     "0870940955",
+              }
+    json.NewEncoder(w).Encode(addBook)
+}
+func homePage(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprint(w, "Welcome to the HomePage!")
+}
+func getPort() string {
+     var port = os.Getenv("PORT")
+     if port == "" {
+        port = "8080"
+        fmt.Println("No Port In Heroku" + port)
+     }
+     return ":" + port 
+}
+func handleRequest() {
+    http.HandleFunc("/", homePage)
+    http.HandleFunc("/getAddress", getAddressBookAll)
+    http.ListenAndServe(getPort(), nil) // ----> เพิ่ม getPort ตรงนี้ด้วย
+}
 func main() {
-	bot, err := linebot.New(
-		os.Getenv("bb0b8d079ce78447fa352de58c53e717"),
-		os.Getenv("yT35cNNeUMINaUceIHQZ4Ekf/w9PdmrmHUk7vG9NQwZdVM949YcAvKNrWeASyosY9qblfzfLFyKWNodhlDymCDU91oNtZvSNxZms+PtH7S+z/ffz39kRMyTWsJixwd8AjVkIy3TwedCUb+vARz9YvQdB04t89/1O/w1cDnyilFU="),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Setup HTTP Server for receiving requests from LINE platform
-	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
-		events, err := bot.ParseRequest(req)
-		if err != nil {
-			if err == linebot.ErrInvalidSignature {
-				w.WriteHeader(400)
-			} else {
-				w.WriteHeader(500)
-			}
-			return
-		}
-		for _, event := range events {
-			if event.Type == linebot.EventTypeMessage {
-				switch message := event.Message.(type) {
-				case *linebot.TextMessage:
-					if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(message.Text)).Do(); err != nil {
-						log.Print(err)
-					}
-				}
-			}
-		}
-	})
-	// This is just sample code.
-	// For actual use, you must support HTTPS by using `ListenAndServeTLS`, a reverse proxy or something else.
-	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
-		log.Fatal(err)
-	}
+    handleRequest()
 }
